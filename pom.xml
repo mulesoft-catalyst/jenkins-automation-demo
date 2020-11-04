@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.mulesoft.services</groupId>
+    <artifactId>jenkins-demo-flights-api</artifactId>
+    <version>1.0.1-SNAPSHOT</version>
+    <packaging>mule-application</packaging>
+
+    <name>jenkins-demo-flights-api</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <app.runtime>4.3.0</app.runtime>
+        <mule.maven.plugin.version>3.3.5</mule.maven.plugin.version>
+
+        <maven.release.version>3.0.0-M1</maven.release.version>
+        <project.scm.id>mule.github.id</project.scm.id>
+        <enable.anypoint.monitoring>true</enable.anypoint.monitoring>
+        <skip.deploy.verify>false</skip.deploy.verify>
+    </properties>
+
+    <scm>
+        <url>https://github.com/mulesoft-consulting/jenkins-automation-demo.git</url>
+        <connection>scm:git:https://github.com/mulesoft-consulting/jenkins-automation-demo.git</connection>
+        <developerConnection>scm:git:https://github.com/mulesoft-consulting/jenkins-automation-demo.git</developerConnection>
+        <tag>1.0.0</tag>
+    </scm>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.mule.tools.maven</groupId>
+                <artifactId>mule-maven-plugin</artifactId>
+                <version>${mule.maven.plugin.version}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <classifier>mule-application</classifier>
+                    <cloudHubDeployment>
+                        <uri>https://anypoint.mulesoft.com</uri>
+                        <muleVersion>${app.runtime}</muleVersion>
+                        <username>${anypoint.username}</username>
+                        <password>${anypoint.password}</password>
+                        <applicationName>${cloudhub.application.name}</applicationName>
+                        <environment>${cloudhub.environment}</environment>
+                        <businessGroup>${business.group.name}</businessGroup>
+                        <artifact>${artifact.path}</artifact>
+                        <workers>${cloudhub.workers}</workers>
+                        <workerType>${cloudhub.worker.type}</workerType>
+                        <region>${cloudhub.region}</region>
+                        <objectStoreV2>true</objectStoreV2>
+                        <deploymentTimeout>2000000</deploymentTimeout>
+                        <skipDeploymentVerification>${skip.deploy.verify}</skipDeploymentVerification>
+                        <properties>
+                            <anypoint.platform.client_id>${anypoint.platform.client.id}</anypoint.platform.client_id>
+                            <anypoint.platform.client_secret>${anypoint.platform.client.secret}</anypoint.platform.client_secret>
+                            <mule.env>${mule.env}</mule.env>
+                            <anypoint.platform.config.analytics.agent.enabled>${enable.anypoint.monitoring}</anypoint.platform.config.analytics.agent.enabled>
+                            <api.id>${api.id}</api.id>
+                        </properties>
+                    </cloudHubDeployment>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven.release.version}</version>
+                <configuration>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-sockets-connector</artifactId>
+            <version>1.1.4</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <dependency>
+            <groupId>68ef9520-24e9-4cf2-b2f5-620025690913</groupId>
+            <artifactId>mule-plugin-training-american-flights-api</artifactId>
+            <version>2.0.1</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-http-connector</artifactId>
+            <version>1.5.0</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-wsc-connector</artifactId>
+            <version>1.5.8</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-validation-module</artifactId>
+            <version>1.4.0</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-apikit-module</artifactId>
+            <version>1.3.11</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    </dependencies>
+
+    <distributionManagement>
+        <!-- Local JFrog Artifactory -->
+        <repository>
+            <id>central</id>
+            <name>mprice-VirtualBox-releases</name>
+            <url>http://localhost:8082/artifactory/mule-local</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>mprice-VirtualBox-snapshots</name>
+            <url>http://localhost:8082/artifactory/mule-local</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+</project>

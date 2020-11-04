@@ -1,0 +1,277 @@
+{
+	"info": {
+		"_postman_id": "075394e6-bd85-4e90-89bb-bb38160da26d",
+		"name": "Jenkins-Job-Generation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get-Crumb-Issuer",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "7b8c3b56-4d9b-4ed5-b003-2194d46d77f7",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"  console.log(\"Get-Crumb-Issuer completed successfully\");",
+							"});",
+							"pm.test(\"Set Crumb Token\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.environment.set(\"crumb_token\", jsonData.crumb);",
+							"  console.log(\"Crumb Token: \" + pm.environment.get(\"crumb_token\"));",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{jenkins_token}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{jenkins_username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{server}}:{{port}}/crumbIssuer/api/json",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"crumbIssuer",
+						"api",
+						"json"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Job-Config",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "e2fa2bf9-3952-4bbe-abdc-ab4a27bfa8e7",
+						"exec": [
+							"postman.setNextRequest(\"Post-Job\");",
+							"console.log(\"Skipping this request when executed by Collection Run\")"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{jenkins_token}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{jenkins_username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{server}}:{{port}}/job/{{jenkins_job_name}}/config.xml",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"job",
+						"{{jenkins_job_name}}",
+						"config.xml"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post-Job",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "08239302-306e-4e80-b8f6-41833583bde9",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"  console.log(\"Post-Job completed successfully\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{jenkins_token}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{jenkins_username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "text/xml",
+						"type": "text"
+					},
+					{
+						"key": "Jenkins-Crumb",
+						"value": "{{crumb_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "<?xml version='1.1' encoding='UTF-8'?>\n<project>\n    <actions/>\n    <description>Job Generator to create Jenkins Pipeline projects for MuleSoft Application or Shared-Dependency</description>\n    <keepDependencies>false</keepDependencies>\n    <properties>\n        <hudson.model.ParametersDefinitionProperty>\n            <parameterDefinitions>\n                <hudson.model.ChoiceParameterDefinition>\n                    <name>PROJECT_TYPE</name>\n                    <description>Determines what Pipeline projects need to be auto-generated</description>\n                    <choices class=\"java.util.Arrays$ArrayList\">\n                        <a class=\"string-array\">\n                            <string>Mule-Application</string>\n                            <string>Shared-Dependency</string>\n                        </a>\n                    </choices>\n                </hudson.model.ChoiceParameterDefinition>\n                <hudson.model.StringParameterDefinition>\n                    <name>GITHUB_OWNER</name>\n                    <description>Name of the GitHub Owner (e.g. Mulesoft-Consuling)</description>\n                    <defaultValue>Mulesoft-Consulting</defaultValue>\n                    <trim>false</trim>\n                </hudson.model.StringParameterDefinition>\n                <hudson.model.StringParameterDefinition>\n                    <name>ASSET_NAME</name>\n                    <description>GitHub repository name of the MuleSoft Application or Shared Dependency (e.g. Jenkins-Automation-Demo)</description>\n                    <defaultValue></defaultValue>\n                    <trim>false</trim>\n                </hudson.model.StringParameterDefinition>\n                <hudson.model.StringParameterDefinition>\n                    <name>GITHUB_URL</name>\n                    <description>Name of the GitHub URL (e.g. https://github.com/mulesoft-consulting/jenkins-automation-demo.git)</description>\n                    <defaultValue></defaultValue>\n                    <trim>false</trim>\n                </hudson.model.StringParameterDefinition>\n                <hudson.model.StringParameterDefinition>\n                    <name>ASSET_VERSION</name>\n                    <description>Version of the MuleSoft Application (e.g. v1)</description>\n                    <defaultValue>v1</defaultValue>\n                    <trim>false</trim>\n                </hudson.model.StringParameterDefinition>\n            </parameterDefinitions>\n        </hudson.model.ParametersDefinitionProperty>\n    </properties>\n    <scm class=\"hudson.scm.NullSCM\"/>\n    <canRoam>true</canRoam>\n    <disabled>false</disabled>\n    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>\n    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>\n    <triggers/>\n    <concurrentBuild>false</concurrentBuild>\n    <builders>\n        <javaposse.jobdsl.plugin.ExecuteDslScripts plugin=\"job-dsl@1.77\">\n            <scriptText>// Script to generate the Snapshots - Develop/Feature Branch Flow\n// A new UUID must be generated for the first run and re-used for your Job DSL, the plugin updates jobs based on ID\ndef uuid = UUID.randomUUID().toString()\nmultibranchPipelineJob(&quot;${ASSET_NAME}-${ASSET_VERSION}-ci-build&quot;) {\n    description &quot;Multibranch Pipeline Project (CI) for ${ASSET_NAME}-${ASSET_VERSION}&quot;\n    branchSources {\n        branchSource {\n            source {\n                github {\n                    def owner = &quot;${GITHUB_OWNER}&quot;\n                    repoOwner(owner.toLowerCase())\n                  \tdef repo = &quot;${ASSET_NAME}&quot;\n                    repository(repo.toLowerCase())\n                    repositoryUrl(&quot;${GITHUB_URL}&quot;)\n                    configuredByUrl(false)\n                    credentialsId(&apos;mule.github.id&apos;)\n                    id(uuid)\n                    traits {\n                        localBranchTrait()\n                    }\n                }\n            }\n        }\n    }\n    configure {\n        def traits = it / sources / data / &apos;jenkins.branch.BranchSource&apos; / source / traits\n            traits &lt;&lt; &quot;org.jenkinsci.plugins.github_branch_source.BranchDiscoveryTrait&quot; {\n                strategyId(1);\n            }\n            traits &lt;&lt; &quot;org.jenkinsci.plugins.github_branch_source.OriginPullRequestDiscoveryTrait&quot; {\n                strategyId(1);\n            }\n            traits &lt;&lt; &quot;org.jenkinsci.plugins.github_branch_source.ForkPullRequestDiscoveryTrait&quot; {\n                strategyId(1);\n            }\n            traits &lt;&lt; &quot;jenkins.scm.impl.trait.WildcardSCMHeadFilterTrait&quot; {\n                includes(&apos;*&apos;)\n                excludes(&apos;master&apos;)\n            }\n    }\n    factory {\n        workflowBranchProjectFactory {\n        scriptPath(&quot;jenkins/ci-build.jenkinsfile&quot;)\n        }\n    }\n    orphanedItemStrategy {\n        discardOldItems {\n        }\n    }\n} \n\n// Script to generate the Prepare Release - Master Branch Flow\npipelineJob(&quot;${ASSET_NAME}-${ASSET_VERSION}-ci-master&quot;) {\n    description &quot;Pipeline Project (CI) for ${ASSET_NAME}-${ASSET_VERSION}&quot;\n    properties{ \n        githubProjectUrl (&quot;${GITHUB_URL}&quot;) \n    }\n    triggers {\n        githubPush()\n    }\n    definition {\n        cpsScmFlowDefinition {\n            lightweight(true)\n            scm {\n                gitSCM {\n                    userRemoteConfigs {\n                        userRemoteConfig {\n                            credentialsId(&apos;mule.github.id&apos;)\n                            name(&apos;master&apos;)\n                            refspec(&apos;&apos;)\n                            url(&quot;${GITHUB_URL}&quot;) \n                        }\n                    }\n                    branches {\n                        branchSpec {\n                            name(&apos;master&apos;)\n                        }\n                    }\n                    doGenerateSubmoduleConfigurations(false)\n                    browser {\n                    }\n                    gitTool(&apos;&apos;)\n                    extensions {\n                        localBranch {\n                            localBranch(&apos;master&apos;)\n                        }\n                        messageExclusion {\n                            excludedMessage(&apos;^(?s)\\\\[maven-release-plugin\\\\].*&apos;)\n                        }\n                    }\n                }\n            }\n            scriptPath(&quot;jenkins/ci-build.jenkinsfile&quot;)\n        }\n    }\n}\n\n// Script to queue first Build to register the GitHub Webhook\nqueue(&quot;${ASSET_NAME}-${ASSET_VERSION}-ci-master&quot;)\n\n// Script to generate the Deploy Release - Master Branch Flow\nif (PROJECT_TYPE == &quot;Mule-Application&quot;) {\n  pipelineJob(&quot;${ASSET_NAME}-${ASSET_VERSION}-cd-deploy&quot;) {\n      description &quot;Deploy Pipeline Project (CD) for ${ASSET_NAME}-${ASSET_VERSION}&quot;\n      properties{ \n          githubProjectUrl (&quot;${GITHUB_URL}&quot;) \n      }\n      parameters {\n          stringParam(&apos;RELEASE_VERSION&apos;, &apos;&apos;, &apos;Release Version to be deployed (e.g. 1.0.0)&apos;)\n          choiceParam(&apos;ENVIRONMENT&apos;, [&apos;Testing&apos;, &apos;Production&apos;], &apos;Environment where Mule Application will be deployed&apos;)\n          choiceParam(&apos;ASSET_TYPE&apos;, [&apos;API&apos;, &apos;Integration&apos;], &apos;Type of  Mule Application (e.g. API or Integration)&apos;)\n          stringParam(&apos;API_VERSION&apos;, &apos;1.0&apos;, &apos;Version of API Instance for pairing with Mule Application (e.g. 1.0)&apos;)\n          stringParam(&apos;CLIENT_APP&apos;, &apos;&apos;, &apos;Name of the Client Application (e.g. Jenkins-Demo-OpenID)&apos;)\n      }\n      definition {\n        cpsScmFlowDefinition {\n            lightweight(true)\n            scm {\n                gitSCM {\n                    userRemoteConfigs {\n                        userRemoteConfig {\n                            credentialsId(&apos;mule.github.id&apos;)\n                            name(&apos;master&apos;)\n                            refspec(&apos;&apos;)\n                            url(&quot;${GITHUB_URL}&quot;) \n                        }\n                    }\n                    branches {\n                        branchSpec {\n                            name(&apos;master&apos;)\n                        }\n                    }\n                    doGenerateSubmoduleConfigurations(false)\n                    browser {\n                    }\n                    gitTool(&apos;&apos;)\n                }\n            }\n            scriptPath(&quot;jenkins/cd-deploy.jenkinsfile&quot;)\n        }\n    }\n  }\n}\n\n// Script to generate List View of newly created Pipeline jobs\nif (PROJECT_TYPE == &quot;Mule-Application&quot;) {\n    listView(&quot;${ASSET_NAME}-${ASSET_VERSION}&quot;) {\n        description(&quot;All Pipeline Jobs for ${ASSET_NAME}-${ASSET_VERSION}&quot;)\n        filterBuildQueue()\n        filterExecutors()\n        jobs {\n            names(&quot;${ASSET_NAME}-${ASSET_VERSION}-ci-build&quot;, &quot;${ASSET_NAME}-${ASSET_VERSION}-ci-master&quot;, &quot;${ASSET_NAME}-${ASSET_VERSION}-cd-deploy&quot;)\n        }\n        columns {\n            status()\n            weather()\n            name()\n            lastSuccess()\n            lastFailure()\n            lastDuration()\n            buildButton()\n        }\n    }\n} else {\n    listView(&quot;${ASSET_NAME}-${ASSET_VERSION}&quot;) {\n        description(&quot;All Pipeline Jobs for ${ASSET_NAME}-${ASSET_VERSION}&quot;)\n        filterBuildQueue()\n        filterExecutors()\n        jobs {\n            names(&quot;${ASSET_NAME}-${ASSET_VERSION}-ci-build&quot;, &quot;${ASSET_NAME}-${ASSET_VERSION}-ci-master&quot;)\n        }\n        columns {\n            status()\n            weather()\n            name()\n            lastSuccess()\n            lastFailure()\n            lastDuration()\n            buildButton()\n        }\n    }\n}</scriptText>\n            <usingScriptText>true</usingScriptText>\n            <sandbox>false</sandbox>\n            <ignoreExisting>false</ignoreExisting>\n            <ignoreMissingFiles>false</ignoreMissingFiles>\n            <failOnMissingPlugin>false</failOnMissingPlugin>\n            <failOnSeedCollision>false</failOnSeedCollision>\n            <unstableOnDeprecation>false</unstableOnDeprecation>\n            <removedJobAction>IGNORE</removedJobAction>\n            <removedViewAction>IGNORE</removedViewAction>\n            <removedConfigFilesAction>IGNORE</removedConfigFilesAction>\n            <lookupStrategy>JENKINS_ROOT</lookupStrategy>\n        </javaposse.jobdsl.plugin.ExecuteDslScripts>\n    </builders>\n    <publishers/>\n    <buildWrappers/>\n</project>"
+				},
+				"url": {
+					"raw": "http://{{server}}:{{port}}/createItem?name={{jenkins_job_name}}",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"createItem"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "{{jenkins_job_name}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post-Build-with-Parameters",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "ad24acdd-eeb1-4890-b678-bac59cc236e3",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"  pm.response.to.have.status(201);",
+							"  console.log(\"Post-Build-with-Parameters completed successfully\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{jenkins_token}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{jenkins_username}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Jenkins-Crumb",
+						"value": "{{crumb_token}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "PROJECT_TYPE",
+							"value": "{{project_type}}",
+							"type": "text"
+						},
+						{
+							"key": "GITHUB_OWNER",
+							"value": "{{github_owner}}",
+							"type": "text"
+						},
+						{
+							"key": "ASSET_NAME",
+							"value": "{{jenkins_asset_name}}",
+							"type": "text"
+						},
+						{
+							"key": "GITHUB_URL",
+							"value": "{{github_url}}",
+							"type": "text"
+						},
+						{
+							"key": "ASSET_VERSION",
+							"value": "{{jenkins_asset_version}}",
+							"type": "text"
+						}
+					],
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}:{{port}}/job/{{jenkins_job_name}}/buildWithParameters",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"port": "{{port}}",
+					"path": [
+						"job",
+						"{{jenkins_job_name}}",
+						"buildWithParameters"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

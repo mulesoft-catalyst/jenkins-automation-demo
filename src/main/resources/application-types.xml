@@ -1,0 +1,98 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="flights_json" format="json">
+      <types:shape format="weave" example="examples/flights-example.json"><![CDATA[%dw 2.0
+
+type flights_json = Array<{|  airline: String,   flightCode: String,   fromAirportCode: String,   toAirportCode: String,   departureDate: String,   emptySeats: Number {"typeId": "int"},   totalSeats: Number {"typeId": "int"},   price: Number {"typeId": "int"},   planeType: String|}> {"example": "[{\\\"airline\\\":\\\"United\\\",\\\"flightCode\\\":\\\"ER38sd\\\",\\\"fromAirportCode\\\":\\\"LAX\\\",\\\"toAirportCode\\\":\\\"SFO\\\",\\\"departureDate\\\":\\\"May 21, 2016\\\",\\\"emptySeats\\\":0,\\\"totalSeats\\\":200,\\\"price\\\":199,\\\"planeType\\\":\\\"Boeing 737\\\"},{\\\"airline\\\":\\\"Delta\\\",\\\"flightCode\\\":\\\"ER0945\\\",\\\"fromAirportCode\\\":\\\"PDX\\\",\\\"toAirportCode\\\":\\\"CLE\\\",\\\"departureDate\\\":\\\"June 1, 2016\\\",\\\"emptySeats\\\":24,\\\"totalSeats\\\":350,\\\"price\\\":450,\\\"planeType\\\":\\\"Boeing 747\\\"}]"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="flight_json" format="json">
+      <types:shape format="weave" example="examples/flight-example.json"><![CDATA[%dw 2.0
+
+type flight_json = {|
+  airline: String, 
+  flightCode: String, 
+  fromAirportCode: String, 
+  toAirportCode: String, 
+  departureDate: String, 
+  emptySeats: Number {"typeId": "int"}, 
+  totalSeats: Number {"typeId": "int"}, 
+  price: Number {"typeId": "int"}, 
+  planeType: String
+|} {"example": "{\\\"airline\\\":\\\"United\\\",\\\"flightCode\\\":\\\"ER38sd\\\",\\\"fromAirportCode\\\":\\\"LAX\\\",\\\"toAirportCode\\\":\\\"SFO\\\",\\\"departureDate\\\":\\\"May 21, 2016\\\",\\\"emptySeats\\\":0,\\\"totalSeats\\\":200,\\\"price\\\":199,\\\"planeType\\\":\\\"Boeing 737\\\"}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="flights_xml" format="xml">
+      <types:example format="xml" element="{http://soap.training.mulesoft.com/}listAllFlightsResponse" location="examples/flights-example.xml"/>
+    </types:type>
+    <types:type name="Flight_pojo" format="java">
+      <types:shape format="java" element="com.mulesoft.training.Flight"/>
+    </types:type>
+    <types:type name="united_flights_json" format="json">
+      <types:shape format="weave" example="examples/united-flights-example.json"><![CDATA[%dw 2.0
+
+type united_flights_json = {|
+  flights: Array<{|    airlineName: String,     price: Number {"typeId": "double"},     departureDate: String,     planeType: String,     origin: String,     code: String,     emptySeats: Number {"typeId": "int"},     destination: String  |}>
+|} {"example": "{\\\"flights\\\":[{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":400.00,\\\"departureDate\\\":\\\"2015\\/03\\/20\\\",\\\"planeType\\\":\\\"Boeing 737\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER38sd\\\",\\\"emptySeats\\\":0,\\\"destination\\\":\\\"SFO\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":345.99,\\\"departureDate\\\":\\\"2015\\/02\\/11\\\",\\\"planeType\\\":\\\"Boeing 737\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER45if\\\",\\\"emptySeats\\\":52,\\\"destination\\\":\\\"LAX\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":346.00,\\\"departureDate\\\":\\\"2015\\/04\\/11\\\",\\\"planeType\\\":\\\"Boeing 777\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER45jd\\\",\\\"emptySeats\\\":12,\\\"destination\\\":\\\"LAX\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":423.00,\\\"departureDate\\\":\\\"2015\\/06\\/11\\\",\\\"planeType\\\":\\\"Boeing 707\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER0945\\\",\\\"emptySeats\\\":0,\\\"destination\\\":\\\"LAX\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":845.00,\\\"departureDate\\\":\\\"2015\\/07\\/11\\\",\\\"planeType\\\":\\\"Boeing 727\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER9fje\\\",\\\"emptySeats\\\":32,\\\"destination\\\":\\\"CLE\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":245.00,\\\"departureDate\\\":\\\"2015\\/08\\/11\\\",\\\"planeType\\\":\\\"Boeing 747\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER3kfd\\\",\\\"emptySeats\\\":13,\\\"destination\\\":\\\"CLE\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":945.00,\\\"departureDate\\\":\\\"2015\\/09\\/11\\\",\\\"planeType\\\":\\\"Boeing 757\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER39rk\\\",\\\"emptySeats\\\":54,\\\"destination\\\":\\\"SFO\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":954.00,\\\"departureDate\\\":\\\"2015\\/02\\/12\\\",\\\"planeType\\\":\\\"Boeing 777\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER39rj\\\",\\\"emptySeats\\\":23,\\\"destination\\\":\\\"SFO\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":234.00,\\\"departureDate\\\":\\\"2015\\/02\\/12\\\",\\\"planeType\\\":\\\"Boeing 787\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER95jf\\\",\\\"emptySeats\\\":23,\\\"destination\\\":\\\"PDF\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":853.00,\\\"departureDate\\\":\\\"2015\\/02\\/13\\\",\\\"planeType\\\":\\\"Boeing 777\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER49fd\\\",\\\"emptySeats\\\":0,\\\"destination\\\":\\\"PDX\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":483.00,\\\"departureDate\\\":\\\"2015\\/02\\/20\\\",\\\"planeType\\\":\\\"Boeing 777\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER95jf\\\",\\\"emptySeats\\\":95,\\\"destination\\\":\\\"PDX\\\"},{\\\"airlineName\\\":\\\"United\\\",\\\"price\\\":532.00,\\\"departureDate\\\":\\\"2015\\/02\\/12\\\",\\\"planeType\\\":\\\"Boeing 777\\\",\\\"origin\\\":\\\"MUA\\\",\\\"code\\\":\\\"ER04kf\\\",\\\"emptySeats\\\":30,\\\"destination\\\":\\\"PDX\\\"}]}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#037af7c2-0835-446b-a929-65682c8818a9">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="united_flights_json"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#96988bdb-c521-4e0b-aac3-c6a87d25cede">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="Flight_pojo[]"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#80b29b41-51cb-4174-856c-8abab8cb4d2d">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="Flight_pojo[]"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#9daae5a2-f649-473f-9ec3-9d00c01f616d">
+    <types:processor-declaration>
+      <types:output-event>
+        <types:message>
+          <types:payload type="Flight_pojo[]"/>
+        </types:message>
+      </types:output-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#99335e4c-1070-4683-ac6f-49db9d6a4827">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="flight_json"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#4e60e26f-cdd8-4150-aee3-64bb1d7b5b99">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="flights_xml"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

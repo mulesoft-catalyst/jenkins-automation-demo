@@ -1,0 +1,9 @@
+{
+  "redeploymentEnabled": true,
+  "minMuleVersion": "4.3.0",
+  "requiredProduct": "MULE_EE",
+  "secureProperties": [
+  	"anypoint.platform.client_id",
+  	"anypoint.platform.client_secret"
+  	]
+}
