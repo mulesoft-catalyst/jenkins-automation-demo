@@ -1,0 +1,343 @@
+#!groovy
+pipeline {
+    agent any
+    options {
+        skipDefaultCheckout true
+    }
+    environment {
+        BUILD_VERSION = "build.${currentBuild.number}"
+        CLIENT_ID = credentials('anypoint.platform.clientId')
+        CLIENT_SECRET = credentials('anypoint.platform.clientSecret')
+        ANYPOINT_PLATFORM_CREDS = credentials('anypoint.platform.account')
+        ASSET_VERSION = "v1"
+    }
+    parameters {
+        string( name: 'RELEASE_VERSION', description: 'Release Version to be deployed (e.g. 1.0.0)' )
+        choice( name: 'ENVIRONMENT', choices: "Testing\nProduction", description: 'Environment where Mule Application will be deployed' )
+        choice( name: 'ASSET_TYPE', choices: "API\nIntegration", description: 'Type of  Mule Application (e.g. API or Integration)' )
+        string( name: 'API_VERSION', defaultValue: '1.0', description: 'Version of API Instance for pairing with Mule Application (e.g. 1.0)' )
+        string( name: 'CLIENT_APP', description: 'Name of the Client Application (e.g. Jenkins-Demo-OpenID)' )
+    }
+    stages{
+        stage('Checkout Release') {
+            steps {
+                script {
+                    def githubUrl = scm.userRemoteConfigs[0].url
+                    print "GitHub URL: " + githubUrl
+                    echo "Checking out Release from GitHub..."
+                    checkout([$class: 'GitSCM', 
+                            branches: [[name: "${params.RELEASE_VERSION}"]], 
+                            doGenerateSubmoduleConfigurations: false, 
+                            extensions: [], 
+                            submoduleCfg: [], 
+                            userRemoteConfigs: [[credentialsId: "mule.github.id", url: "${githubUrl}"]]])
+                    }
+                echo "Checkout Release completed: ${currentBuild.currentResult}"
+            }
+            post {
+                success {
+                    echo "...Checkout Succeeded for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                } 
+                failure {
+                    echo "...Checkout Failed for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                }
+            }
+        }
+        stage('Download from Artifactory') {
+            steps {
+                script {
+                    echo "Starting Download from Artifactory..."
+                    def pom = readMavenPom file: 'pom.xml'
+                    print "POM groupId: " + pom.groupId
+                    print "POM artifactId: " + pom.artifactId
+                    print "Release version: " + params.RELEASE_VERSION
+                    withMaven(
+                        // Default Maven installation declared in the Jenkins "Global Tool Configuration"
+                        maven: 'Maven-3.6.3',
+                        // Maven settings.xml file defined with the Jenkins Config File Provider Plugin
+                        mavenSettingsConfig: '5b8a4952-9763-4685-9fd0-e17521e77ac1') {
+                            sh """ mvn dependency:copy -Dartifact="${pom.groupId}:${pom.artifactId}:$RELEASE_VERSION:jar:mule-application"  """
+                        }
+                    echo "Artifact Downloaded from Artifactory: ${currentBuild.currentResult}"
+                }
+            }    
+            post {
+                success {
+                    echo "...Download from Artifactory Succeeded for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                } 
+                failure {
+                    echo "...Download from Artifactory Failed for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                }
+            }
+        }
+        stage('Promote API to Testing') {
+            when {
+                expression { params.ENVIRONMENT == 'Testing' }
+                expression { params.ASSET_TYPE == 'API' }
+            }
+            steps {
+                script {
+                    echo "Promoting API from Development..."
+                    def pom = readMavenPom file: 'pom.xml'
+                    print "POM Name: " + pom.name
+                    print "POM artifactId: " + pom.artifactId
+                    print "Mule Runtime: " + pom.properties['app.runtime']
+                    sh """ newman run postman/Promote-API.postman_collection.json \
+                                --env-var anypoint_username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                --env-var anypoint_password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                --env-var anypoint_organisation=MuleSoft \
+                                --env-var source_environment=Development \
+                                --env-var target_environment=Testing \
+                                --env-var asset_id=${pom.artifactId} \
+                                --env-var product_version=${params.API_VERSION} \
+                                --env-var anypoint_runtime=${pom.properties['app.runtime']} \
+                                --env-var client_app_name=${params.CLIENT_APP} \
+                                --disable-unicode \
+                                --reporters cli,json \
+                                --reporter-json-export promote-api-output.json """
+                    echo "Promoted API from Testing: ${currentBuild.currentResult}"
+                }
+            }    
+            post {
+                success {
+                    echo "...Promote API from Development Succeeded for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                } 
+                failure {
+                    echo "...Promote API from Development Failed for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                }
+            }
+        }
+        stage('Deploy to Testing') {
+            when {
+                expression { params.ENVIRONMENT == 'Testing' }
+            }
+            steps {
+                script {
+                    echo "Starting Deploy to Production..."
+                    def pom = readMavenPom file: 'pom.xml'
+                    print "POM groupId: " + pom.groupId
+                    print "POM artifactId: " + pom.artifactId
+                    print "Release version: " + params.RELEASE_VERSION
+                    if ( params.ASSET_TYPE == 'API' ) {
+                        def autodis = readJSON file: 'promote-api-output.json'
+                        def index = autodis.environment.values.findIndexOf{ it.key == "auto_api_id" }
+                        print "Autodiscovery API ID: " + autodis.environment.values[index].value
+                        withMaven(
+                            // Default Maven installation declared in the Jenkins "Global Tool Configuration"
+                            maven: 'Maven-3.6.3',
+                            // Maven settings.xml file defined with the Jenkins Config File Provider Plugin
+                            mavenSettingsConfig: '5b8a4952-9763-4685-9fd0-e17521e77ac1') {
+                                sh """ mvn --batch-mode mule:deploy \
+                                    -Dmule.env=TEST \
+                                    -Danypoint.username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                    -Danypoint.password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                    -Dcloudhub.application.name=${pom.artifactId}-test-$ASSET_VERSION \
+                                    -Dcloudhub.environment=Testing \
+                                    -Dbusiness.group.name=MuleSoft \
+                                    -Dartifact.path=target/dependency/${pom.artifactId}-$RELEASE_VERSION-mule-application.jar \
+                                    -Dcloudhub.workers=1 \
+                                    -Dcloudhub.worker.type=MICRO \
+                                    -Dcloudhub.region=ap-southeast-2 \
+                                    -Danypoint.platform.client.id=$CLIENT_ID \
+                                    -Danypoint.platform.client.secret=$CLIENT_SECRET \
+                                    -Dapi.id=${autodis.environment.values[index].value} """
+                            }
+                    } else {
+                        withMaven(
+                        // Default Maven installation declared in the Jenkins "Global Tool Configuration"
+                        maven: 'Maven-3.6.3',
+                        // Maven settings.xml file defined with the Jenkins Config File Provider Plugin
+                        mavenSettingsConfig: '5b8a4952-9763-4685-9fd0-e17521e77ac1') {
+                            sh """ mvn --batch-mode mule:deploy \
+                                    -Dmule.env=TEST \
+                                    -Danypoint.username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                    -Danypoint.password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                    -Dcloudhub.application.name=${pom.artifactId}-test-$ASSET_VERSION \
+                                    -Dcloudhub.environment=Testing \
+                                    -Dbusiness.group.name=MuleSoft \
+                                    -Dartifact.path=target/dependency/${pom.artifactId}-$RELEASE_VERSION-mule-application.jar \
+                                    -Dcloudhub.workers=1 \
+                                    -Dcloudhub.worker.type=MICRO \
+                                    -Dcloudhub.region=ap-southeast-2 \
+                                    -Danypoint.platform.client.id=$CLIENT_ID \
+                                    -Danypoint.platform.client.secret=$CLIENT_SECRET """ 
+                        }
+                    }
+                    echo "Artifact Deployed to Testing: ${currentBuild.currentResult}"
+                }
+            }    
+            post {
+                success {
+                    echo "...Deploy to Testing Succeeded for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                } 
+                failure {
+                    echo "...Deploy to Testing Failed for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                }
+            }
+        }
+        stage('Run Integration Tests on Testing') {
+            when {
+                expression { params.ENVIRONMENT == 'Testing' }
+            }
+            steps {
+                script {
+                    echo "Running Integration Tests on Development..."
+                    def pom = readMavenPom file: 'pom.xml'
+                    print "POM Name: " + pom.name
+                    print "POM artifactId: " + pom.artifactId
+                    print "Mule Runtime: " + pom.properties['app.runtime']
+                    if ( params.ASSET_TYPE == 'API' ) {
+                        def autodis = readJSON file: 'promote-api-output.json'
+                        def index = autodis.environment.values.findIndexOf{ it.key == "auto_api_id" }
+                        print "Autodiscovery API ID: " + autodis.environment.values[index].value
+                        sh """ newman run postman/Jenkins-Demo-Integration-Test.postman_collection.json \
+                                    --env-var anypoint_username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                    --env-var anypoint_password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                    --env-var anypoint_organisation=MuleSoft \
+                                    --env-var environment=Testing \
+                                    --env-var asset_type=${params.ASSET_TYPE} \
+                                    --env-var target_api_id=${autodis.environment.values[index].value} \
+                                    --env-var client_app_name=${params.CLIENT_APP} \
+                                    --env-var target_application_name=${pom.artifactId}-test-$ASSET_VERSION \
+                                    --disable-unicode """
+                    } else {
+                        sh """ newman run postman/Jenkins-Demo-Integration-Test.postman_collection.json \
+                                    --env-var anypoint_username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                    --env-var anypoint_password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                    --env-var anypoint_organisation=MuleSoft \
+                                    --env-var environment=Testing \
+                                    --env-var asset_type=${params.ASSET_TYPE} \
+                                    --env-var target_application_name=${pom.artifactId}-test-$ASSET_VERSION \
+                                    --disable-unicode """
+                    }
+                    echo "Running Integration Tests on Testing: ${currentBuild.currentResult}"
+                } 
+            }
+            post {
+                success {
+                    echo "...Running Integration Tests on Testing Succeeded for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                } 
+                failure {
+                    echo "...Running Integration Tests on Testing Failed for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                }
+            }
+        }
+        stage('Promote API to Production') {
+            when {
+                expression { params.ENVIRONMENT == 'Production' }
+                expression { params.ASSET_TYPE == 'API' }
+            }
+            steps {
+                script {
+                    echo "Promoting API from Testing..."
+                    def pom = readMavenPom file: 'pom.xml'
+                    print "POM Name: " + pom.name
+                    print "POM artifactId: " + pom.artifactId
+                    print "Mule Runtime: " + pom.properties['app.runtime']
+                    sh """ newman run postman/Promote-API.postman_collection.json \
+                                --env-var anypoint_username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                --env-var anypoint_password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                --env-var anypoint_organisation=MuleSoft \
+                                --env-var source_environment=Testing \
+                                --env-var target_environment=Production \
+                                --env-var asset_id=${pom.artifactId} \
+                                --env-var product_version=${params.API_VERSION} \
+                                --env-var anypoint_runtime=${pom.properties['app.runtime']} \
+                                --env-var client_app_name=${params.CLIENT_APP} \
+                                --disable-unicode \
+                                --reporters cli,json \
+                                --reporter-json-export promote-api-output.json """
+                    echo "Promoted API from Testing: ${currentBuild.currentResult}"
+                }
+            }    
+            post {
+                success {
+                    echo "...Promote API from Testing Succeeded for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                } 
+                failure {
+                    echo "...Promote API from Testing Failed for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                }
+            }
+        }
+        stage('Deploy to Production') {
+            when {
+                expression { params.ENVIRONMENT == 'Production' }
+            }
+            steps {
+                script {
+                    echo "Starting Deploy to Production..."
+                    def pom = readMavenPom file: 'pom.xml'
+                    print "POM groupId: " + pom.groupId
+                    print "POM artifactId: " + pom.artifactId
+                    print "Release version: " + params.RELEASE_VERSION
+                    if ( params.ASSET_TYPE == 'API' ) {
+                        def autodis = readJSON file: 'promote-api-output.json'
+                        def index = autodis.environment.values.findIndexOf{ it.key == "auto_api_id" }
+                        print "Autodiscovery API ID: " + autodis.environment.values[index].value
+                        withMaven(
+                            // Default Maven installation declared in the Jenkins "Global Tool Configuration"
+                            maven: 'Maven-3.6.3',
+                            // Maven settings.xml file defined with the Jenkins Config File Provider Plugin
+                            mavenSettingsConfig: '5b8a4952-9763-4685-9fd0-e17521e77ac1') {
+                                sh """ mvn --batch-mode mule:deploy \
+                                        -Dmule.env=PROD \
+                                        -Danypoint.username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                        -Danypoint.password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                        -Dcloudhub.application.name=${pom.artifactId}-prod-$ASSET_VERSION \
+                                        -Dcloudhub.environment=Production \
+                                        -Dbusiness.group.name=MuleSoft \
+                                        -Dartifact.path=target/dependency/${pom.artifactId}-$RELEASE_VERSION-mule-application.jar \
+                                        -Dcloudhub.workers=1 \
+                                        -Dcloudhub.worker.type=MICRO \
+                                        -Dcloudhub.region=ap-southeast-2 \
+                                        -Danypoint.platform.client.id=$CLIENT_ID \
+                                        -Danypoint.platform.client.secret=$CLIENT_SECRET \
+                                        -Dapi.id=${autodis.environment.values[index].value} """
+                            }
+                    } else {
+                        withMaven(
+                        // Default Maven installation declared in the Jenkins "Global Tool Configuration"
+                        maven: 'Maven-3.6.3',
+                        // Maven settings.xml file defined with the Jenkins Config File Provider Plugin
+                        mavenSettingsConfig: '5b8a4952-9763-4685-9fd0-e17521e77ac1') {
+                            sh """ mvn --batch-mode mule:deploy \
+                                    -Dmule.env=PROD \
+                                    -Danypoint.username=$ANYPOINT_PLATFORM_CREDS_USR \
+                                    -Danypoint.password=$ANYPOINT_PLATFORM_CREDS_PSW \
+                                    -Dcloudhub.application.name=${pom.artifactId}-test-$ASSET_VERSION \
+                                    -Dcloudhub.environment=Production \
+                                    -Dbusiness.group.name=MuleSoft \
+                                    -Dartifact.path=target/dependency/${pom.artifactId}-$RELEASE_VERSION-mule-application.jar \
+                                    -Dcloudhub.workers=1 \
+                                    -Dcloudhub.worker.type=MICRO \
+                                    -Dcloudhub.region=ap-southeast-2 \
+                                    -Danypoint.platform.client.id=$CLIENT_ID \
+                                    -Danypoint.platform.client.secret=$CLIENT_SECRET """
+                        }
+                    }
+                    echo "Artifact Deployed to Production: ${currentBuild.currentResult}"
+                }
+            }    
+            post {
+                success {
+                    echo "...Deploy to Production Succeeded for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                } 
+                failure {
+                    echo "...Deploy to Production Failed for ${env.BUILD_VERSION}: ${currentBuild.currentResult}"
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo "All Good: ${env.RELEASE_VERSION}: ${currentBuild.currentResult}"    
+        }
+        failure {
+            echo "Not So Good: ${env.RELEASE_VERSION}: ${currentBuild.currentResult}"
+        }         
+        always {
+            echo "Pipeline result: ${currentBuild.result}"
+            echo "Pipeline currentResult: ${currentBuild.currentResult}"
+        }
+    }  
+}
