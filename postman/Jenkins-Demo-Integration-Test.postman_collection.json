@@ -1,0 +1,592 @@
+{
+	"info": {
+		"_postman_id": "1f9e4a6b-7e0b-4810-9d85-a95fd8307538",
+		"name": "Jenkins-Demo-Integration-Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get-Bearer-Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "5ce65844-edb9-4006-b9a8-432867bd72db",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"  console.log(\"Get-Bearer-Token completed successfully\");",
+							"});",
+							"pm.test(\"Set Access Token\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.environment.set(\"access_token\", jsonData.access_token);",
+							"  console.log(\"Access Token: \" + pm.environment.get(\"access_token\"));",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "{{anypoint_org_id}}",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "username",
+							"value": "{{anypoint_username}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{anypoint_password}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/accounts/login",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"accounts",
+						"login"
+					]
+				},
+				"description": "GetBearerToken"
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Organization-ID",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "{{anypoint_org_id}}",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "d07103bf-4dc7-4ae1-b65d-c2e616fa0753",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Organisation-ID completed successfully\");",
+							"});",
+							"pm.test(\"Set Organisation Id\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  for (var i = 0; i < jsonData.user.memberOfOrganizations.length; i++)",
+							"",
+							"    // Set Organisation ID",
+							"    if (jsonData.user.memberOfOrganizations[i].name == pm.environment.get(\"anypoint_organisation\")) {",
+							"      pm.environment.set(\"organisation_id\", jsonData.user.memberOfOrganizations[i].id);",
+							"      console.log(\"Oragnisation Id: \" + pm.environment.get(\"organisation_id\"));",
+							"    }",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/accounts/api/me",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"accounts",
+						"api",
+						"me"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Environments",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "{{anypoint_env_id}}",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "01fb5533-d39e-46d1-9179-92718058641f",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Environments completed successfully\");",
+							"});",
+							"pm.test(\"Set Environment Id\", function () {",
+							"     var jsonData = pm.response.json();",
+							"     for (var i = 0; i < jsonData.length; i++) {",
+							"",
+							"          // Set Environment Id",
+							"          if (jsonData[i].name == pm.variables.get(\"environment\")) {",
+							"               pm.environment.set(\"environment_id\", jsonData[i].id);",
+							"               console.log(\"Environment Id: \" + pm.environment.get(\"environment_id\"));",
+							"          }",
+							"     }",
+							"});",
+							"// Logic to skip to Check-Application-Status if ASSET_TYPE is Integration",
+							"var asset = pm.environment.get(\"asset_type\");",
+							"console.log(\"Asset Type: \" + asset);",
+							"if (asset === \"Integration\") {",
+							"     postman.setNextRequest(\"Check-Application-Status\");",
+							"     console.log(\"Skipping to Check-Application-Status based on Asset Type\")",
+							"};"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apiplatform/repository/v2/organizations/{{organisation_id}}/environments",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apiplatform",
+						"repository",
+						"v2",
+						"organizations",
+						"{{organisation_id}}",
+						"environments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Contracts",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "6dee0f11-79e1-4808-9b01-6d02d7a312ec",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "39284cd9-d4a2-4005-bc1a-0be40a8c5596",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Contracts completed successfully\");",
+							"});",
+							"pm.test(\"Set Contract ID\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    for (var i = 0; i < jsonData.contracts.length; i++) {",
+							"",
+							"        if (jsonData.contracts[i].application.name == pm.environment.get(\"client_app_name\")) {",
+							"            pm.environment.set(\"contract_id\", jsonData.contracts[i].id);",
+							"            console.log(\"Contract ID: \" + pm.environment.get(\"contract_id\"));",
+							"        }",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/{{organisation_id}}/environments/{{environment_id}}/apis/{{target_api_id}}/contracts",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apimanager",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"environments",
+						"{{environment_id}}",
+						"apis",
+						"{{target_api_id}}",
+						"contracts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Contracts-by-ID",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "e5e61592-9084-4b69-a790-ea936be07c6b",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "e70e6c66-1aea-40d9-8173-a752435988d3",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Contracts-by-ID completed successfully\");",
+							"});",
+							"pm.test(\"Set Client ID and Client Secret\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"client_id\", jsonData.application.clientId);",
+							"    pm.environment.set(\"client_secret\", jsonData.application.clientSecret);",
+							"    console.log(\"Client ID and Client Secret variables have been set\" );",
+							"    }",
+							");"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/{{organisation_id}}/environments/{{environment_id}}/apis/{{target_api_id}}/contracts/{{contract_id}}",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apimanager",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"environments",
+						"{{environment_id}}",
+						"apis",
+						"{{target_api_id}}",
+						"contracts",
+						"{{contract_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Check-Application-Status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "b5943e32-ce62-42a1-8e4b-4b125aab9121",
+						"exec": [
+							"pm.test(\"Get Application Status\", function() {",
+							"  var jsonData = pm.response.json();",
+							"  pm.environment.set(\"application_status\", jsonData.status);",
+							"  console.log(\"Application Status: \" + pm.environment.get(\"application_status\"));",
+							"});",
+							"",
+							"// Code to check Application Status",
+							"pm.test(\"Check Application Status\", function() {",
+							"    let currentCount = parseInt(pm.environment.get(\"app_counter\")); ",
+							"    let numberOfLoops = 10;",
+							"    var body = JSON.parse(responseBody);",
+							"    if (currentCount < numberOfLoops) {",
+							"        if (pm.environment.get(\"application_status\") !== \"STARTED\") {",
+							"          setTimeout(function(){ ",
+							"                console.log(\"Sleep for 30 seconds before Retrying\");",
+							"            }, 30000);",
+							"            postman.setNextRequest(\"GetApplicationStatus\");",
+							"        } else {",
+							"          postman.setNextRequest(\"Get-Flights\");",
+							"          console.log(\"Application has been deployed Successfully\");",
+							"        }",
+							"        currentCount++;",
+							"        pm.environment.set(\"counter\", currentCount);",
+							"    } else {",
+							"        console.log(\"Exceeded maximum retry count: \" + pm.environment.get(\"counter\"));",
+							"        throw new Error(\"Exceeded maximum retry count: \" + pm.environment.get(\"counter\"));",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "8ef13d13-b0b7-48ae-b2ec-f6fcffd88d79",
+						"exec": [
+							"if (!pm.environment.has(\"app_counter\")) {",
+							"    console.log(\"Setting APP counter now\");",
+							"    pm.environment.set(\"app_counter\", 0);",
+							" }"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-ANYPNT-ENV-ID",
+						"type": "text",
+						"value": "{{environment_id}}"
+					}
+				],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/cloudhub/api/v2/applications/{{target_application_name}}",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"cloudhub",
+						"api",
+						"v2",
+						"applications",
+						"{{target_application_name}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Flights",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "750fa39e-51a3-4aa5-acaa-db39ea5c7b48",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Flights completed successfully\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "client_id",
+						"value": "{{client_id}}",
+						"type": "text"
+					},
+					{
+						"key": "client_secret",
+						"value": "{{client_secret}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{target_application_name}}.au-s1.cloudhub.io/api/flights?code=SFO&airline=united",
+					"protocol": "http",
+					"host": [
+						"{{target_application_name}}",
+						"au-s1",
+						"cloudhub",
+						"io"
+					],
+					"path": [
+						"api",
+						"flights"
+					],
+					"query": [
+						{
+							"key": "code",
+							"value": "SFO"
+						},
+						{
+							"key": "airline",
+							"value": "united"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post-Flights",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "c71dd785-ab45-47fc-b860-655b977027f2",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"    console.log(\"Post-Flights completed successfully\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "client_id",
+						"value": "{{client_id}}",
+						"type": "text"
+					},
+					{
+						"key": "client_secret",
+						"value": "{{client_secret}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"airline\": \"Delta\",\n    \"flightCode\": \"ER0945\",\n    \"fromAirportCode\": \"PDX\",\n    \"toAirportCode\": \"CLE\",\n    \"departureDate\": \"June 1, 2016\",\n    \"emptySeats\": 24,\n    \"totalSeats\": 350,\n    \"price\": 450,\n    \"planeType\": \"Boeing 747\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{target_application_name}}.au-s1.cloudhub.io/api/flights",
+					"protocol": "http",
+					"host": [
+						"{{target_application_name}}",
+						"au-s1",
+						"cloudhub",
+						"io"
+					],
+					"path": [
+						"api",
+						"flights"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

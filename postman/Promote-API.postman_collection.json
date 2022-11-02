@@ -1,0 +1,948 @@
+{
+	"info": {
+		"_postman_id": "f4c35692-45ed-48c6-bfce-5873e8fca77b",
+		"name": "Promote-API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get-Bearer-Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "c86e0ffe-cd38-4a14-8cae-d901c980c9df",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"  console.log(\"Get-Bearer-Token completed successfully\");",
+							"});",
+							"pm.test(\"Set Access Token\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  pm.environment.set(\"access_token\", jsonData.access_token);",
+							"  console.log(\"Access Token: \" + pm.environment.get(\"access_token\"));",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "ccd4a320-f6e2-4114-bd3b-dc82d9078165",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "username",
+							"value": "{{anypoint_username}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{anypoint_password}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/accounts/login",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"accounts",
+						"login"
+					]
+				},
+				"description": "GetBearerToken"
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Organization-ID",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "fec41e6f-a3f1-4d38-9e40-fcb7879eaa20",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "d734d65e-9cf8-4b82-83d4-fce8867b8ffd",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Organisation-ID completed successfully\");",
+							"});",
+							"pm.test(\"Set Organisation Id\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  for (var i = 0; i < jsonData.user.memberOfOrganizations.length; i++)",
+							"",
+							"    // Set Organisation ID",
+							"    if (jsonData.user.memberOfOrganizations[i].name == pm.environment.get(\"anypoint_organisation\")) {",
+							"      pm.environment.set(\"organisation_id\", jsonData.user.memberOfOrganizations[i].id);",
+							"      console.log(\"Oragnisation Id: \" + pm.environment.get(\"organisation_id\"));",
+							"    }",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/accounts/api/me",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"accounts",
+						"api",
+						"me"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Environments",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "1463d332-b86d-4f68-b1d4-8bd1a564f0ce",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "2b997dae-362c-4e80-8d39-7bbd25e4f35c",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Environments completed successfully\");",
+							"});",
+							"pm.test(\"Set Environment Id\", function () {",
+							"     var jsonData = pm.response.json();",
+							"     for (var i = 0; i < jsonData.length; i++) {",
+							"",
+							"          // Set Source Environment Id",
+							"          if (jsonData[i].name == pm.variables.get(\"source_environment\")) {",
+							"               pm.environment.set(\"source_environment_id\", jsonData[i].id);",
+							"               console.log(\"Source Environment Id: \" + pm.environment.get(\"source_environment_id\"));",
+							"          }",
+							"          // Set Target Environment Id",
+							"          if (jsonData[i].name == pm.variables.get(\"target_environment\")) {",
+							"               pm.environment.set(\"target_environment_id\", jsonData[i].id);",
+							"               console.log(\"Target Environment Id: \" + pm.environment.get(\"target_environment_id\"));",
+							"          }",
+							"     }",
+							"});",
+							"",
+							"",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apiplatform/repository/v2/organizations/{{organisation_id}}/environments",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apiplatform",
+						"repository",
+						"v2",
+						"organizations",
+						"{{organisation_id}}",
+						"environments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Source-APIs",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "08cd1c5b-71a9-4a7c-9219-0a6f375b93b3",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Source-APIs completed successfully\");",
+							"});",
+							"pm.test(\"Get API Info\", function () {",
+							"    var jsonData = pm.response.json();",
+							"",
+							"    for (var i = 0; i < jsonData.assets.length; i++) {",
+							"",
+							"        if (jsonData.assets[i].apis[i].id !== null) {",
+							"            pm.environment.set(\"source_api_id\", jsonData.assets[i].apis[i].id);",
+							"            console.log(\"Source Api Id: \" + pm.environment.get(\"source_api_id\"));",
+							"        }",
+							"    }",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "24da19a8-fb70-4294-824f-2bc5ba868604",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/{{organisation_id}}/environments/{{source_environment_id}}/apis?assetId={{asset_id}}&productVersion={{product_version}}",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apimanager",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"environments",
+						"{{source_environment_id}}",
+						"apis"
+					],
+					"query": [
+						{
+							"key": "assetId",
+							"value": "{{asset_id}}"
+						},
+						{
+							"key": "productVersion",
+							"value": "{{product_version}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Check-For-API",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "7c9f2fe7-d6e3-4eea-8ae4-e3a2cefdb736",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"  console.log(\"Check-For-API completed successfully\");",
+							"});",
+							"pm.test(\"Check for Api\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  for (var i = 0; i < jsonData.assets.length; i++) {",
+							"    if (jsonData.assets[i].apis[i].id !== null) {",
+							"      pm.environment.set(\"api_id_exists\", \"Api Exists\");",
+							"      console.log(\"Skip Promotion: \" + pm.environment.get(\"api_id_exists\"));",
+							"",
+							"      pm.environment.set(\"target_api_id\", jsonData.assets[i].apis[i].id);",
+							"      console.log(\"Target Api Id: \" + pm.environment.get(\"target_api_id\"));",
+							"",
+							"      pm.environment.set(\"target_group_id\", jsonData.assets[i].apis[i].groupId);",
+							"      console.log(\"Target Group Id: \" + pm.environment.get(\"target_group_id\"));",
+							"",
+							"      pm.environment.set(\"target_asset_id\", jsonData.assets[i].apis[i].assetId);",
+							"      console.log(\"Target Asset Id: \" + pm.environment.get(\"target_asset_id\"));",
+							"",
+							"      pm.environment.set(\"target_asset_version\", jsonData.assets[i].apis[i].assetVersion);",
+							"      console.log(\"Target Asset Version: \" + pm.environment.get(\"target_asset_version\"));",
+							"",
+							"      pm.environment.set(\"target_product_version\", jsonData.assets[i].apis[i].productVersion);",
+							"      console.log(\"Target Product Version: \" + pm.environment.get(\"target_product_version\"));",
+							"    }",
+							"  }",
+							"  if (jsonData.total !== 0) {",
+							"    postman.setNextRequest(\"Get-Autodiscovery-Info\");",
+							"    console.log(\"Skipping Promote Request as API already exists\")",
+							"  }",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/{{organisation_id}}/environments/{{target_environment_id}}/apis?assetId={{asset_id}}&productVersion={{product_version}}",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apimanager",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"environments",
+						"{{target_environment_id}}",
+						"apis"
+					],
+					"query": [
+						{
+							"key": "assetId",
+							"value": "{{asset_id}}"
+						},
+						{
+							"key": "productVersion",
+							"value": "{{product_version}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Promote-API",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "8ada23d9-5692-4113-9b85-597bf1001151",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"    console.log(\"Promote-API completed successfully\");",
+							"});",
+							"pm.test(\"Promote Api\", function () {",
+							"  var jsonData = pm.response.json();",
+							"",
+							"  pm.environment.set(\"target_api_id\", jsonData.id);",
+							"  console.log(\"Target Api Id: \" + pm.environment.get(\"target_api_id\"));",
+							"",
+							"  pm.environment.set(\"target_group_id\", jsonData.groupId);",
+							"  console.log(\"Target Group Id: \" + pm.environment.get(\"target_group_id\"));",
+							"",
+							"  pm.environment.set(\"target_asset_id\", jsonData.assetId);",
+							"  console.log(\"Target Asset Id: \" + pm.environment.get(\"target_asset_id\"));",
+							"",
+							"  pm.environment.set(\"target_asset_version\", jsonData.assetVersion);",
+							"  console.log(\"Target Asset Version: \" + pm.environment.get(\"target_asset_version\"));",
+							"",
+							"  pm.environment.set(\"target_product_version\", jsonData.productVersion);",
+							"  console.log(\"Target Product Version: \" + pm.environment.get(\"target_product_version\"));",
+							"",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "b2d899a8-2760-48c6-ae71-ff11d2766f45",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"promote\": {\n    \"originApiId\": {{source_api_id}},\n    \"policies\": {\n      \"allEntities\": true\n    },\n    \"tiers\": {\n      \"allEntities\": true\n    },\n    \"alerts\": {\n      \"allEntities\": true\n    }\n  }\n}"
+				},
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/{{organisation_id}}/environments/{{target_environment_id}}/apis",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apimanager",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"environments",
+						"{{target_environment_id}}",
+						"apis"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update-API",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "c010aac9-f408-40f4-ad5a-def3ef37f26c",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Update-API completed successfully\");",
+							"});",
+							"pm.test(\"Update Api\", function () {",
+							"  var jsonData = pm.response.json();",
+							"",
+							"  pm.environment.set(\"target_api_id\", jsonData.id);",
+							"  console.log(\"Target Api Id: \" + pm.environment.get(\"target_api_id\"));",
+							"",
+							"});",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "9fc963e9-1e22-4b3c-9f77-67ac61cfe9e6",
+						"exec": [
+							"if (pm.environment.get(\"target_environment\") == \"Testing\") {",
+							"    pm.environment.set(\"mule_env\", \"test\")",
+							"    console.log(\"Environment Short Name: \" + pm.environment.get(\"mule_env\"))",
+							"}",
+							"if (pm.environment.get(\"target_environment\") == \"Production\") {",
+							"    pm.environment.set(\"mule_env\", \"prod\")",
+							"    console.log(\"Environment Short Name: \" + pm.environment.get(\"mule_env\"))",
+							"}",
+							"var url = \"https://\" + pm.environment.get(\"asset_id\") + \"-\" + pm.environment.get(\"mule_env\") + \"v1\" + \".au-s1.cloudhub.io/api/*\"",
+							"pm.environment.set(\"url\", url)",
+							"console.log(\"Implementation URL: \" + pm.environment.get(\"url\"))"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"endpoint\": {\n        \"uri\": \"{{url}}\"\n    }\n}"
+				},
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/{{organisation_id}}/environments/{{target_environment_id}}/apis/{{target_api_id}}",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apimanager",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"environments",
+						"{{target_environment_id}}",
+						"apis",
+						"{{target_api_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Client-Applications",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "91247836-cf0d-4950-b5aa-ada4f4d15910",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "0dac7bc6-f9da-46ca-a19d-573d21b707cb",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Client-Applications completed successfully\");",
+							"});",
+							"pm.test(\"Set Client Application ID\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    for (var i = 0; i < jsonData.length; i++) {",
+							"",
+							"        if (jsonData[i].name == pm.environment.get(\"client_app_name\")) {",
+							"            pm.environment.set(\"client_app_id\", jsonData[i].id);",
+							"            console.log(\"Client Application ID: \" + pm.environment.get(\"client_app_id\"));",
+							"        }",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/exchange/api/v1/organizations/{{target_environment_id}}/applications?apiInstanceId={{target_api_id}}",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"exchange",
+						"api",
+						"v1",
+						"organizations",
+						"{{target_environment_id}}",
+						"applications"
+					],
+					"query": [
+						{
+							"key": "apiInstanceId",
+							"value": "{{target_api_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-SLA-Tiers",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "c1f42b62-eac2-439d-870a-8d4675a2a923",
+						"exec": [
+							"if (pm.environment.get(\"target_environment\") == \"Testing\") {",
+							"    pm.environment.set(\"sla_tier_name\", \"Non-Production-Tier\")",
+							"    console.log(\"SLA Tier Name: \" + pm.environment.get(\"sla_tier_name\"))",
+							"}",
+							"if (pm.environment.get(\"target_environment\") == \"Production\") {",
+							"    pm.environment.set(\"sla_tier_name\", \"Production-Tier\")",
+							"    console.log(\"SLA Tier Name: \" + pm.environment.get(\"sla_tier_name\"))",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "4f434f78-453a-441b-a64f-434d116f70ab",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-SLA-Tiers completed successfully\");",
+							"});",
+							"pm.test(\"Set SLA Tier\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    for (var i = 0; i < jsonData.length; i++) {",
+							"",
+							"        if (jsonData[i].name == pm.environment.get(\"sla_tier_name\")) {",
+							"            pm.environment.set(\"target_tier_id\", jsonData[i].id);",
+							"            console.log(\"Target Tier ID: \" + pm.environment.get(\"target_tier_id\"));",
+							"        }",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/exchange/api/v1/organizations/{{organisation_id}}/assets/{{target_environment_id}}/accounts-api/productApiVersion/{{target_product_version}}/instances/{{target_api_id}}/tiers",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"exchange",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"assets",
+						"{{target_environment_id}}",
+						"accounts-api",
+						"productApiVersion",
+						"{{target_product_version}}",
+						"instances",
+						"{{target_api_id}}",
+						"tiers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Apply-Request-Access",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "8c2f15c1-1093-4aee-9e8e-5ce73ed4ebab",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "89cbc0d2-8a20-43ae-82e7-bf3358d740d4",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"    console.log(\"Apply-Request-Access completed successfully\");",
+							"});",
+							"pm.test(\"Check Status of Request Access\", function () {",
+							"    var jsonData = pm.response.json();",
+							"",
+							"    if (jsonData.status == \"APPROVED\" || jsonData.status == \"PENDING\") {",
+							"        console.log(\"Request Access has status of \" + jsonData.status);",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"apiId\": \"{{target_api_id}}\",\n    \"environmentId\": \"{{target_environment_id}}\",\n    \"requestedTierId\": {{target_tier_id}},\n    \"acceptedTerms\": true,\n    \"organizationId\": \"{{organisation_id}}\",\n    \"groupId\": \"{{target_group_id}}\",\n    \"assetId\": \"{{target_asset_id}}\",\n    \"version\": \"{{target_asset_version}}\",\n    \"versionGroup\": \"{{target_product_version}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/exchange/api/v1/organizations/{{target_environment_id}}/applications/{{client_app_id}}/contracts",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"exchange",
+						"api",
+						"v1",
+						"organizations",
+						"{{target_environment_id}}",
+						"applications",
+						"{{client_app_id}}",
+						"contracts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get-Autodiscovery-Info",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "edd251d7-e761-494f-afa8-97ad50355836",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"    console.log(\"Get-Autodiscovery-Info completed successfully\");",
+							"});",
+							"pm.test(\"Get Autodiscovery Info\", function () {",
+							"  var jsonData = pm.response.json();",
+							"  var runtime = pm.environment.get(\"anypoint_runtime\");",
+							"  console.log(\"Anypoint Runtime: \" + pm.environment.get(\"anypoint_runtime\"));",
+							"",
+							"  if (runtime.startsWith(\"3\")) {",
+							"    pm.environment.set(\"auto_api_name\", jsonData[\"api.name\"]);",
+							"    console.log(\"Autodiscovery Api Name: \" + pm.environment.get(\"auto_api_name\"));",
+							"",
+							"    pm.environment.set(\"auto_api_version\", jsonData[\"api.version\"]);",
+							"    console.log(\"Autodiscovery Api Version: \" + pm.environment.get(\"auto_api_version\"));",
+							"  }",
+							"",
+							"  if (runtime.startsWith(\"4\")) {",
+							"    pm.environment.set(\"auto_api_id\", jsonData[\"api.id\"]);",
+							"    console.log(\"Autodiscovery Api Id: \" + pm.environment.get(\"auto_api_id\"));",
+							"  }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "ee7b460b-c04d-42f4-857d-e3ab0b21e5e2",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/{{organisation_id}}/environments/{{target_environment_id}}/apis/{{target_api_id}}/autodiscoveryProperties?gatewayVersion={{anypoint_runtime}}",
+					"protocol": "https",
+					"host": [
+						"anypoint",
+						"mulesoft",
+						"com"
+					],
+					"path": [
+						"apimanager",
+						"api",
+						"v1",
+						"organizations",
+						"{{organisation_id}}",
+						"environments",
+						"{{target_environment_id}}",
+						"apis",
+						"{{target_api_id}}",
+						"autodiscoveryProperties"
+					],
+					"query": [
+						{
+							"key": "gatewayVersion",
+							"value": "{{anypoint_runtime}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
